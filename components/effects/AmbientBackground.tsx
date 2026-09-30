@@ -1,7 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 export function AmbientBackground() {
   return (
     <div
@@ -11,34 +7,11 @@ export function AmbientBackground() {
       {/* Base */}
       <div className="absolute inset-0 bg-[#05060a]" />
 
-      {/* Animated gradient orbs */}
-      <motion.div
-        animate={{
-          x: [0, 80, -40, 0],
-          y: [0, -60, 40, 0],
-          scale: [1, 1.1, 0.95, 1],
-        }}
-        transition={{ duration: 40, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -left-60 -top-40 h-[700px] w-[700px] rounded-full bg-accent-blue/[0.10] blur-[140px]"
-      />
-      <motion.div
-        animate={{
-          x: [0, -70, 50, 0],
-          y: [0, 50, -40, 0],
-          scale: [1, 1.15, 1, 1],
-        }}
-        transition={{ duration: 50, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -right-60 top-1/3 h-[800px] w-[800px] rounded-full bg-accent-purple/[0.09] blur-[160px]"
-      />
-      <motion.div
-        animate={{
-          x: [0, 60, -30, 0],
-          y: [0, -40, 60, 0],
-          scale: [1, 0.95, 1.1, 1],
-        }}
-        transition={{ duration: 45, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -bottom-60 left-1/3 h-[600px] w-[600px] rounded-full bg-accent-cyan/[0.08] blur-[140px]"
-      />
+      {/* Gradient orbs — pure CSS transform animations (compositor thread,
+          zero JS per frame). Smaller radii keep blur compositing cheap. */}
+      <div className="orb orb-a absolute -left-60 -top-40 h-[560px] w-[560px] rounded-full bg-accent-blue/[0.10] blur-[120px]" />
+      <div className="orb orb-b absolute -right-60 top-1/3 h-[640px] w-[640px] rounded-full bg-accent-purple/[0.09] blur-[130px]" />
+      <div className="orb orb-c absolute -bottom-60 left-1/3 h-[480px] w-[480px] rounded-full bg-accent-cyan/[0.08] blur-[120px]" />
 
       {/* Subtle grid */}
       <div

@@ -2,7 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
-export function GlobalParticles({ density = 45 }: { density?: number }) {
+const FRAME_INTERVAL = 1000 / 30; // 30fps is plenty for ambient dust
+
+export function GlobalParticles({ density = 25 }: { density?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -12,16 +14,20 @@ export function GlobalParticles({ density = 45 }: { density?: number }) {
     if (!ctx) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    if (reduced) return;
 
-    const count = reduced ? 0 : isMobile ? Math.floor(density / 2) : density;
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    // Mobile GPUs: drastically fewer particles
+    const count = isMobile ? Math.min(12, Math.floor(density / 2)) : density;
     if (count === 0) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    // DPR 1: halves fill-rate cost vs 1.5x with negligible visual loss
+    // for tiny low-alpha dots.
+    const dpr = 1;
     let w = 0;
     let h = 0;
     let raf = 0;
-    let paused = false;
+    let last = 0;
 
     const resize = () => {
       w = canvas.clientWidth;
@@ -50,8 +56,11 @@ export function GlobalParticles({ density = 45 }: { density?: number }) {
       a: Math.random() * 0.5 + 0.15,
     }));
 
-    const draw = () => {
-      if (paused) return;
+    const draw = (now: number) => {
+      raf = requestAnimationFrame(draw);
+      if (now - last < FRAME_INTERVAL) return;
+      last = now;
+      if (document.hidden) return;
       ctx.clearRect(0, 0, w, h);
 
       for (const p of pts) {
@@ -67,21 +76,12 @@ export function GlobalParticles({ density = 45 }: { density?: number }) {
         ctx.fillStyle = `rgba(180,200,255,${p.a})`;
         ctx.fill();
       }
-
-      raf = requestAnimationFrame(draw);
     };
-    draw();
-
-    const onVis = () => {
-      paused = document.hidden;
-      if (!paused) draw();
-    };
-    document.addEventListener("visibilitychange", onVis);
+    raf = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      document.removeEventListener("visibilitychange", onVis);
     };
   }, [density]);
 

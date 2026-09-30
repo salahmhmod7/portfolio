@@ -1,12 +1,7 @@
 "use client";
 
-import { motion, Variants } from "framer-motion";
-import { ReactNode } from "react";
-
-const variants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0 },
-};
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 export function RevealOnScroll({
   children,
@@ -17,16 +12,38 @@ export function RevealOnScroll({
   delay?: number;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setVisible(true);
+            io.disconnect();
+          }
+        }
+      },
+      { rootMargin: "0px 0px -80px 0px", threshold: 0.05 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <motion.div
-      variants={variants}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
+    <div
+      ref={ref}
+      style={{ transitionDelay: visible && delay ? `${delay}s` : "0s" }}
+      className={cn("reveal", visible && "reveal-visible", className)}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

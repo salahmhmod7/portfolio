@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { useRef, MouseEvent, ReactNode } from "react";
+import { useRef, type MouseEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "ghost";
@@ -22,45 +21,48 @@ export function MagneticButton({
   ariaLabel?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const sx = useSpring(x, { stiffness: 200, damping: 20 });
-  const sy = useSpring(y, { stiffness: 200, damping: 20 });
+  const raf = useRef(0);
+
+  const setT = (x: number, y: number) => {
+    const el = ref.current;
+    if (el) el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  };
 
   const handleMove = (e: MouseEvent) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const mx = e.clientX - rect.left - rect.width / 2;
-    const my = e.clientY - rect.top - rect.height / 2;
-    x.set(mx * 0.25);
-    y.set(my * 0.25);
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    const rect = el.getBoundingClientRect();
+    const mx = (e.clientX - rect.left - rect.width / 2) * 0.25;
+    const my = (e.clientY - rect.top - rect.height / 2) * 0.25;
+    cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => setT(mx, my));
   };
 
   const handleLeave = () => {
-    x.set(0);
-    y.set(0);
+    cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => setT(0, 0));
   };
 
   const base =
-    "relative inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-medium transition-colors";
+    "relative inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-medium transition-colors will-change-transform";
   const styles =
     variant === "primary"
       ? "bg-white text-black hover:bg-white/90"
       : "border border-white/15 text-ink-primary hover:border-white/30 hover:bg-white/[0.04]";
 
   const content = (
-    <motion.div
+    <div
       ref={ref}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      style={{ x: sx, y: sy }}
       className={cn(base, styles, className)}
       onClick={onClick}
       role={href ? "link" : "button"}
       aria-label={ariaLabel}
     >
       {children}
-    </motion.div>
+    </div>
   );
 
   if (href) {

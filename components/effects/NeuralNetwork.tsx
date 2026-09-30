@@ -2,7 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
-export function NeuralNetwork({ density = 60 }: { density?: number }) {
+const FRAME_INTERVAL = 1000 / 30; // 30fps: halves O(n²) line work, looks identical
+
+export function NeuralNetwork({ density = 40 }: { density?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -14,16 +16,18 @@ export function NeuralNetwork({ density = 60 }: { density?: number }) {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     const count = reduced
-      ? Math.floor(density / 3)
+      ? 0
       : isMobile
-        ? Math.floor(density / 2)
+        ? Math.min(18, Math.floor(density / 2))
         : density;
+    if (count === 0) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = 1;
     let w = 0;
     let h = 0;
     let raf = 0;
-    let paused = false;
+    let last = 0;
+    let inView = true;
 
     type P = { x: number; y: number; vx: number; vy: number };
     let pts: P[] = [];
@@ -52,7 +56,6 @@ export function NeuralNetwork({ density = 60 }: { density?: number }) {
       return true;
     };
 
-    // أول ما نعرف الأبعاد الصح، نعمل النقاط
     const init = () => {
       const changed = setSize();
       if (changed || pts.length === 0) {
@@ -60,11 +63,9 @@ export function NeuralNetwork({ density = 60 }: { density?: number }) {
       }
     };
 
-    // ResizeObserver: لما الـ container يتغيّر حجمه، نعيد الحساب
     const ro = new ResizeObserver(() => {
       const changed = setSize();
       if (changed) {
-        // اعد توزيع النقاط على الأبعاد الجديدة
         for (const p of pts) {
           if (p.x > w) p.x = Math.random() * w;
           if (p.y > h) p.y = Math.random() * h;
@@ -73,22 +74,28 @@ export function NeuralNetwork({ density = 60 }: { density?: number }) {
     });
     ro.observe(canvas);
 
-    // ننتظر فريم عشان الـ layout يخلص
-    const rafInit = requestAnimationFrame(() => {
-      init();
-      draw();
-    });
+    // Pause when hero scrolled out of view — biggest single saving
+    // (this canvas is the most expensive loop on the page).
+    const io = new IntersectionObserver(
+      (entries) => {
+        inView = entries[0]?.isIntersecting ?? true;
+      },
+      { threshold: 0 },
+    );
+    io.observe(canvas);
 
-    const draw = () => {
-      if (paused) return;
-      if (w === 0 || h === 0) {
-        raf = requestAnimationFrame(draw);
+    const draw = (now: number) => {
+      raf = requestAnimationFrame(draw);
+      if (!inView || document.hidden) {
+        last = now;
         return;
       }
+      if (now - last < FRAME_INTERVAL) return;
+      last = now;
+      if (w === 0 || h === 0) return;
 
       ctx.clearRect(0, 0, w, h);
 
-      // حركة
       for (const p of pts) {
         p.x += p.vx;
         p.y += p.vy;
@@ -98,20 +105,21 @@ export function NeuralNetwork({ density = 60 }: { density?: number }) {
         if (p.y > h) p.y = 0;
       }
 
-      // الوصلات
       const maxDist = Math.min(150, Math.max(100, w * 0.1));
       const maxD2 = maxDist * maxDist;
+      ctx.lineWidth = 1;
       for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
         for (let j = i + 1; j < pts.length; j++) {
-          const a = pts[i];
           const b = pts[j];
           const dx = a.x - b.x;
+          if (dx > maxDist || dx < -maxDist) continue;
           const dy = a.y - b.y;
+          if (dy > maxDist || dy < -maxDist) continue;
           const d2 = dx * dx + dy * dy;
           if (d2 < maxD2) {
             const alpha = (1 - Math.sqrt(d2) / maxDist) * 0.22;
-            ctx.strokeStyle = `rgba(96,165,250,${alpha})`;
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = `rgba(96,165,250,${alpha.toFixed(3)})`;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -120,28 +128,24 @@ export function NeuralNetwork({ density = 60 }: { density?: number }) {
         }
       }
 
-      // النقاط
+      ctx.fillStyle = "rgba(229,231,235,0.75)";
       for (const p of pts) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(229,231,235,0.75)";
         ctx.fill();
       }
+    };
 
+    const rafInit = requestAnimationFrame(() => {
+      init();
       raf = requestAnimationFrame(draw);
-    };
-
-    const onVis = () => {
-      paused = document.hidden;
-      if (!paused) draw();
-    };
-    document.addEventListener("visibilitychange", onVis);
+    });
 
     return () => {
       cancelAnimationFrame(raf);
       cancelAnimationFrame(rafInit);
       ro.disconnect();
-      document.removeEventListener("visibilitychange", onVis);
+      io.disconnect();
     };
   }, [density]);
 

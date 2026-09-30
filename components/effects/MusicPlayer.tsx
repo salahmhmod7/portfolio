@@ -12,7 +12,9 @@ export function MusicPlayer() {
   const [available, setAvailable] = useState(true);
 
   useEffect(() => {
-    const audio = new Audio(musicConfig.src);
+    const audio = new Audio();
+    audio.preload = "none"; // don't download music until user presses play
+    audio.src = musicConfig.src;
     audio.loop = true;
     audio.muted = true;
     audio.volume = 0.4;
@@ -20,6 +22,7 @@ export function MusicPlayer() {
     audioRef.current = audio;
     return () => {
       audio.pause();
+      audio.removeAttribute("src");
       audioRef.current = null;
     };
   }, []);

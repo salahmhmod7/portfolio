@@ -6,7 +6,28 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { TechBadge } from "@/components/ui/TechBadge";
 import { RevealOnScroll } from "@/components/ui/RevealOnScroll";
 import { skillCategories } from "@/data/skills";
-import * as Icons from "lucide-react";
+import {
+  Bot,
+  Brain,
+  Circle,
+  Code2,
+  Database,
+  Eye,
+  Languages,
+  Server,
+  Sparkles,
+} from "lucide-react";
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Brain,
+  Eye,
+  Languages,
+  Sparkles,
+  Database,
+  Bot,
+  Server,
+  Code2,
+};
 
 export function Skills() {
   return (
@@ -21,11 +42,7 @@ export function Skills() {
 
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {skillCategories.map((cat, i) => {
-            const IconCmp =
-              (Icons as unknown as Record<
-                string,
-                React.ComponentType<{ className?: string }>
-              >)[cat.icon] || Icons.Circle;
+            const IconCmp = iconMap[cat.icon] || Circle;
             return (
               <RevealOnScroll key={cat.title} delay={i * 0.04}>
                 <GlassCard className="group h-full p-6 transition-transform duration-300 hover:-translate-y-1">

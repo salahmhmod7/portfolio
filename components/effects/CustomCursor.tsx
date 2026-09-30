@@ -1,66 +1,83 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
+// Lightweight cursor: single rAF lerp loop, no spring lib, direct
+// transform writes (no React re-render per mousemove).
 export function CustomCursor() {
   const [enabled, setEnabled] = useState(false);
-  const [hovering, setHovering] = useState(false);
-
-  const x = useMotionValue(-100);
-  const y = useMotionValue(-100);
-  const sx = useSpring(x, { stiffness: 350, damping: 30, mass: 0.4 });
-  const sy = useSpring(y, { stiffness: 350, damping: 30, mass: 0.4 });
+  const ringRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const isTouch = window.matchMedia("(pointer: coarse)").matches;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (isTouch || reduced) return;
+    const fine = window.matchMedia("(pointer: fine)").matches;
+    if (isTouch || reduced || !fine) return;
     setEnabled(true);
 
+    let mx = -100;
+    let my = -100;
+    let rx = -100;
+    let ry = -100;
+    let raf = 0;
+    let hovering = false;
+
     const move = (e: MouseEvent) => {
-      x.set(e.clientX);
-      y.set(e.clientY);
+      mx = e.clientX;
+      my = e.clientY;
+      const dot = dotRef.current;
+      if (dot) dot.style.transform = `translate3d(${mx}px, ${my}px, 0)`;
     };
     const over = (e: MouseEvent) => {
       const el = e.target as HTMLElement;
-      setHovering(Boolean(el.closest("a, button, [role='button']")));
+      hovering = Boolean(el.closest("a, button, [role='button']"));
     };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseover", over);
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      const ring = ringRef.current;
+      if (ring) {
+        const s = hovering ? 44 : 28;
+        ring.style.transform = `translate3d(${rx}px, ${ry}px, 0)`;
+        ring.style.width = `${s}px`;
+        ring.style.height = `${s}px`;
+      }
+    };
+    raf = requestAnimationFrame(loop);
+    window.addEventListener("mousemove", move, { passive: true });
+    window.addEventListener("mouseover", over, { passive: true });
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseover", over);
     };
-  }, [x, y]);
+  }, []);
 
   if (!enabled) return null;
 
   return (
     <>
-      <motion.div
+      <div
         aria-hidden
-        style={{ x: sx, y: sy }}
         className="pointer-events-none fixed left-0 top-0 z-[90] hidden md:block"
       >
-        <motion.div
-          animate={{
-            width: hovering ? 44 : 28,
-            height: hovering ? 44 : 28,
-            opacity: hovering ? 0.5 : 0.35,
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="-translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40"
+        <div
+          ref={ringRef}
+          className="-translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40 opacity-40"
+          style={{ width: 28, height: 28 }}
         />
-      </motion.div>
-      <motion.div
+      </div>
+      <div
         aria-hidden
-        style={{ x, y }}
         className="pointer-events-none fixed left-0 top-0 z-[91] hidden md:block"
       >
-        <div className="-translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-white" />
-      </motion.div>
+        <div ref={dotRef}>
+          <div className="-translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-white" />
+        </div>
+      </div>
     </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SectionGlow } from "@/components/ui/SectionGlow";
 import { ProjectCard } from "./ProjectCard";
@@ -30,16 +29,11 @@ export function Projects() {
           <ProjectFilter active={filter} onChange={setFilter} />
         </div>
 
-        <motion.div
-          layout
-          className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          <AnimatePresence mode="popLayout">
-            {filtered.map((p) => (
-              <ProjectCard key={p.slug} project={p} />
-            ))}
-          </AnimatePresence>
-        </motion.div>
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((p) => (
+            <ProjectCard key={p.slug} project={p} />
+          ))}
+        </div>
 
         {filtered.length === 0 && (
           <div className="mt-12 text-center text-sm text-ink-muted">

@@ -3,10 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { CustomCursor } from "@/components/effects/CustomCursor";
-import { MusicPlayer } from "@/components/effects/MusicPlayer";
 import { AmbientBackground } from "@/components/effects/AmbientBackground";
 import { GlobalParticles } from "@/components/effects/GlobalParticles";
+import { DeferredEffects } from "@/components/effects/DeferredEffects";
 import { siteConfig } from "@/data/site";
 import { buildMetadata, buildJsonLd } from "@/lib/seo";
 
@@ -50,15 +49,14 @@ export default function RootLayout({
         </a>
 
         <AmbientBackground />
-        <GlobalParticles density={45} />
+        <GlobalParticles density={25} />
 
         <Navbar />
         <main id="main" className="relative">
           {children}
         </main>
         <Footer />
-        <CustomCursor />
-        <MusicPlayer />
+        <DeferredEffects />
         <span className="sr-only">
           {siteConfig.name} — {siteConfig.tagline}
         </span>

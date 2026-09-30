@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { ArrowUpRight, Github } from "lucide-react";
 import { useState } from "react";
 import type { Project } from "@/types";
@@ -14,13 +13,7 @@ export function ProjectCard({ project }: { project: Project }) {
   const hero = project.images[0];
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-    >
+    <div>
       <GlassCard className="group h-full overflow-hidden">
         <Link href={`/projects/${project.slug}`} className="block">
           <div className="relative aspect-[16/10] overflow-hidden bg-base-800">
@@ -30,6 +23,7 @@ export function ProjectCard({ project }: { project: Project }) {
                 alt={project.title}
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
+                loading="lazy"
                 className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                 onError={() => setImgError(true)}
               />
@@ -86,6 +80,6 @@ export function ProjectCard({ project }: { project: Project }) {
           </div>
         </div>
       </GlassCard>
-    </motion.div>
+    </div>
   );
 }

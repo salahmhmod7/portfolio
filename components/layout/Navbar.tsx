@@ -13,21 +13,36 @@ export function Navbar() {
 
   useEffect(() => {
     let last = window.scrollY;
+    let ticking = false;
+    let lastHidden = false;
+    let lastActive = "home";
     const onScroll = () => {
-      const y = window.scrollY;
-      setHidden(y > last && y > 120);
-      last = y;
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const y = window.scrollY;
+        const nextHidden = y > last && y > 120;
+        last = y;
+        if (nextHidden !== lastHidden) {
+          lastHidden = nextHidden;
+          setHidden(nextHidden);
+        }
 
-      // active section
-      const sections = navigationItems
-        .map((n) => document.getElementById(n.id))
-        .filter(Boolean) as HTMLElement[];
-      const scrollPos = y + 160;
-      let current = "home";
-      for (const s of sections) {
-        if (s.offsetTop <= scrollPos) current = s.id;
-      }
-      setActive(current);
+        // active section (cheap: offsetTop reads only, no layout thrash)
+        const sections = navigationItems
+          .map((n) => document.getElementById(n.id))
+          .filter(Boolean) as HTMLElement[];
+        const scrollPos = y + 160;
+        let current = "home";
+        for (const s of sections) {
+          if (s.offsetTop <= scrollPos) current = s.id;
+        }
+        if (current !== lastActive) {
+          lastActive = current;
+          setActive(current);
+        }
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();

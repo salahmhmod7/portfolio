@@ -1,10 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { ArrowDown, ArrowRight } from "lucide-react";
-import { NeuralNetwork } from "@/components/effects/NeuralNetwork";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { siteConfig } from "@/data/site";
+
+// Canvas is below-the-fold-pausable and non-essential for LCP —
+// keep it out of the initial bundle.
+const NeuralNetwork = dynamic(
+  () =>
+    import("@/components/effects/NeuralNetwork").then((m) => m.NeuralNetwork),
+  { ssr: false },
+);
 
 const container = {
   hidden: {},
@@ -23,7 +31,7 @@ export function Hero() {
       className="relative flex min-h-[100svh] items-center overflow-hidden"
     >
       <div className="absolute inset-0 -z-10 opacity-70">
-        <NeuralNetwork density={70} />
+        <NeuralNetwork density={40} />
       </div>
       <div className="absolute inset-x-0 top-0 -z-10 h-[60%] bg-[radial-gradient(ellipse_at_top,rgba(96,165,250,0.14),transparent_60%)]" />
 
