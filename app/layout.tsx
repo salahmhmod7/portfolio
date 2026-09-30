@@ -16,8 +16,11 @@ const inter = Inter({
   display: "swap",
 });
 
-export const metadata: Metadata = buildMetadata();
-
+export const metadata: Metadata = buildMetadata({
+  verification: {
+    google: "klYhcOTAeXFMmE7o1_yfdKg1KClFchtiX9myaThs9g4",
+  },
+});
 export const viewport: Viewport = {
   themeColor: "#05060a",
   width: "device-width",
